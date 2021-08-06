@@ -32,6 +32,21 @@ func TripCreateOrUpdate(t models.TripBleve, modifidDate string, force bool) erro
 	return nil
 }
 
+func OperatorRoutesCreateOrUpdate(t models.OperatorRouteBleve, modifidDate string, force bool) errors.RestErrors {
+	key := fmt.Sprintf("%s_%s", t.OperatorCode, "Routes")
+
+	// isModified TODO
+	// isModified := IsModified(t, key, modifidDate)
+	isModified := 1
+
+	if isModified == 1 || force {
+		t.ModifiedDate = date_utils.GeApiDBLayoutDateFormat(time.Now().UTC())
+
+		search.OpRoutesIndex.Index(string(key), t)
+	}
+	return nil
+}
+
 func IsModified(t models.Trip, key string, modifidDate string) int {
 	var err error
 	isModified := 0

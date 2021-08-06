@@ -22,7 +22,11 @@ func main() {
 	router.HandleFunc("/orbitcacheservices/push/search", pushSearchResult).Methods("POST")
 	router.HandleFunc("/orbitcacheservices/search", getSearchResult).Methods("POST")
 
+	router.HandleFunc("/orbitcacheservices/push/operator/routes", pushOperatorRoutes).Methods("POST")
+	router.HandleFunc("/orbitcacheservices/search/operator/routes", getOperatorRoutes).Methods("POST")
+
 	http.ListenAndServe(":8080", router)
+
 }
 
 func welcomePage(w http.ResponseWriter, r *http.Request) {
@@ -89,11 +93,49 @@ func pushSearchResult(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(models.Success(nil))
 }
 
+func pushOperatorRoutes(w http.ResponseWriter, r *http.Request) {
+	var operatorRoutes []models.OperatorRoute
+	json.NewDecoder(r.Body).Decode(&operatorRoutes)
+	search.CreateIndex()
+	for _, or := range operatorRoutes {
+		var operatorRouteBleve models.OperatorRouteBleve
+
+		op, _ := json.Marshal(or.Operator)
+		operatorRouteBleve.Operator = string(op)
+
+		operatorRouteBleve.OperatorCode = or.Operator.Code
+
+		rs, _ := json.Marshal(or.Routes)
+		operatorRouteBleve.Routes = string(rs)
+
+		error := cache.OperatorRoutesCreateOrUpdate(operatorRouteBleve, date_utils.GetNowDBFormat(), true)
+
+		if error != nil {
+			logger.ErrorLogger.Println(error.Error())
+			json.NewEncoder(w).Encode(models.Failure(error.Status(), error.Message()))
+		}
+	}
+
+	json.NewEncoder(w).Encode(models.Success(nil))
+}
+
 func getSearchResult(w http.ResponseWriter, r *http.Request) {
 	var searchModel models.SearchRequestModel
 	json.NewDecoder(r.Body).Decode(&searchModel)
 
 	resp, error := search.GetSearchResult(searchModel)
+	if error != nil {
+		logger.ErrorLogger.Println(error.Error())
+		json.NewEncoder(w).Encode(models.Failure(error.Status(), error.Message()))
+	}
+	json.NewEncoder(w).Encode(models.Success(resp))
+}
+
+func getOperatorRoutes(w http.ResponseWriter, r *http.Request) {
+	var searchModel models.SearchRequestModel
+	json.NewDecoder(r.Body).Decode(&searchModel)
+
+	resp, error := search.GetOperatorRoutes(searchModel)
 	if error != nil {
 		logger.ErrorLogger.Println(error.Error())
 		json.NewEncoder(w).Encode(models.Failure(error.Status(), error.Message()))

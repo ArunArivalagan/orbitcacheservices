@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	SearchIndex bleve.Index
+	SearchIndex   bleve.Index
+	OpRoutesIndex bleve.Index
 )
 
 func getIndex(indexName string) bleve.Index {
@@ -25,6 +26,8 @@ func getIndex(indexName string) bleve.Index {
 	switch indexName {
 	case "search":
 		index = SearchIndex
+	case "oproute":
+		index = OpRoutesIndex
 	}
 	return index
 }
@@ -33,7 +36,7 @@ func CreateIndex() {
 	var err error
 	SearchIndex, err = bleve.Open("data/search.bleve")
 	if err == bleve.ErrorIndexPathDoesNotExist {
-		fmt.Println(fmt.Sprintf("Creating product new index %s ... ", "data/search.bleve"))
+		fmt.Println(fmt.Sprintf("Creating search new index %s ... ", "data/search.bleve"))
 		// create a mapping
 		indexMapping, err := buildEventIndexMapping()
 		if err != nil {
@@ -41,7 +44,20 @@ func CreateIndex() {
 		}
 		SearchIndex, err = bleve.New("data/search.bleve", indexMapping)
 		if err != nil {
-			fmt.Println("Failed product index field mapping", err)
+			fmt.Println("Failed search index field mapping", err)
+		}
+	}
+	OpRoutesIndex, err = bleve.Open("data/route.bleve")
+	if err == bleve.ErrorIndexPathDoesNotExist {
+		fmt.Println(fmt.Sprintf("Creating route new index %s ... ", "data/route.bleve"))
+		// create a mapping
+		indexMapping, err := buildRouteIndexMapping()
+		if err != nil {
+			log.Fatal(err)
+		}
+		OpRoutesIndex, err = bleve.New("data/route.bleve", indexMapping)
+		if err != nil {
+			fmt.Println("Failed route index field mapping", err)
 		}
 	}
 }
@@ -176,6 +192,108 @@ func GetSearchResult(m models.SearchRequestModel) (*models.SearchResponseModel, 
 	}
 	//resStr := string(resbyte)
 	//fmt.Println("Final search", resStr)
+	//header
+	if len(resultRow) == 0 {
+		return nil, nil
+	}
+	fieldPos := make(map[string]int)
+	if rm.Fields[0] != "*" {
+		fmt.Println("read from fields list")
+		for idx, fn := range rm.Fields {
+			fieldPos[fn] = idx
+		}
+	} else {
+		idx := 0
+		for f := range resultRow[0] {
+			fieldPos[f] = idx
+			idx = idx + 1
+		}
+	}
+
+	// generateCSV(&m, fieldPos, resultRow)
+	return &rm, nil
+}
+
+func GetOperatorRoutes(m models.SearchRequestModel) (*models.SearchRouteResponseModel, errors.RestErrors) {
+	q := bleve.NewBooleanQuery()
+
+	for _, v := range m.Terms {
+		mq := bleve.NewMatchQuery(v)
+		q.AddMust(mq)
+	}
+	if len(m.PharseQueries) > 0 {
+		for _, v := range m.PharseQueries {
+			mpq := bleve.NewMatchPhraseQuery(v)
+			q.AddMust(mpq)
+		}
+	}
+
+	req := bleve.NewSearchRequest(q)
+
+	if len(m.Fields) > 0 {
+		req.Fields = m.Fields
+	} else {
+		req.Fields = []string{"*"}
+	}
+	if len(m.SortBy) > 0 {
+		req.SortBy(m.SortBy)
+	}
+	for _, f := range m.Facets {
+		req.AddFacet(f, bleve.NewFacetRequest(f, 10))
+	}
+	req.From = m.From
+	req.Size = m.Size
+	if m.Size == 0 {
+		req.Size = 50
+	}
+	CreateIndex()
+	index := getIndex(m.IndexName)
+	fmt.Println("index name", m.IndexName, index.Name())
+	res, err := index.Search(req)
+	if err != nil {
+		fmt.Println("Failed while execute the query", err)
+		return nil, errors.NewInternalServerError("Failed while execute the query", err)
+	}
+	rm := models.SearchRouteResponseModel{}
+	resultRow := make([]map[string]interface{}, 0)
+
+	rm.Fields = res.Request.Fields
+	rm.Total = res.Total
+	rm.Took = res.Took
+	rm.Status = *res.Status
+	for _, rv := range res.Hits {
+		resultRow = append(resultRow, rv.Fields)
+	}
+
+	var routes []models.OperatorRoute
+	for _, rr := range resultRow {
+
+		var operatorRoutes models.OperatorRoute
+
+		operator, _ := utils.UnMarshalBinaryBase([]byte(fmt.Sprint(rr["operator"])))
+		operatorRoutes.Operator = operator
+
+		route, _ := utils.UnMarshalBinaryOperatorRouteList([]byte(fmt.Sprint(rr["routes"])))
+		operatorRoutes.Routes = route
+
+		routes = append(routes, operatorRoutes)
+	}
+	rm.OperatorRoutes = routes
+
+	if len(res.Facets) > 0 {
+		rm.Facets = make(map[string][]models.TermFacet)
+	}
+	for k, v := range res.Facets {
+		terms := make([]models.TermFacet, 0)
+		for _, fv := range v.Terms {
+			terms = append(terms, models.TermFacet{Term: fv.Term, Count: fv.Count})
+		}
+		rm.Facets[k] = terms
+	}
+	if err != nil {
+		fmt.Println("Failed while marshal final search result", err)
+		return nil, errors.NewRestErrors("Failed while final search result", http.StatusInternalServerError, err.Error(), nil)
+	}
 	//header
 	if len(resultRow) == 0 {
 		return nil, nil

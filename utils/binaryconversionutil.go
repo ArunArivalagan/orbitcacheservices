@@ -59,3 +59,9 @@ func UnMarshalBinaryStation(data []byte) (models.Station, error) {
 	err := json.Unmarshal(data, &req)
 	return req, err
 }
+
+func UnMarshalBinaryOperatorRouteList(data []byte) ([]models.Route, error) {
+	var req []models.Route
+	err := json.Unmarshal(data, &req)
+	return req, err
+}

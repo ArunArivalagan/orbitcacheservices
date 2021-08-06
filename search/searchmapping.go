@@ -75,3 +75,42 @@ func buildEventIndexMapping() (mapping.IndexMapping, error) {
 	return indexMapping, nil
 
 }
+
+func buildRouteIndexMapping() (mapping.IndexMapping, error) {
+	// a generic reusable mapping for english text
+	englishTextFieldMapping := bleve.NewTextFieldMapping()
+	dtFieldMapping := bleve.NewDateTimeFieldMapping()
+
+	englishTextFieldMapping.Analyzer = en.AnalyzerName
+
+	// a generic reusable mapping for keyword text
+	keywordFieldMapping := bleve.NewTextFieldMapping()
+	keywordFieldMapping.Analyzer = keyword.Name
+	//keywordFieldMapping.IncludeTermVectors = false
+
+	productMapping := bleve.NewDocumentMapping()
+
+	productMapping.AddFieldMappingsAt("createdAt", dtFieldMapping)
+	productMapping.AddFieldMappingsAt("updatedAt", dtFieldMapping)
+	productMapping.AddFieldMappingsAt("startAt", dtFieldMapping)
+	indexMapping := bleve.NewIndexMapping()
+	indexMapping.AddDocumentMapping("event", productMapping)
+	// indexMapping.DefaultMapping.Dynamic = false
+	// indexMapping.DefaultMapping.Enabled = false
+	//	err := indexMapping.AddCustomAnalyzer("exactMatchIgnoreCase",
+	// map[string]interface{}{
+	// "type": custom_analyzer.Name,
+	// "tokenizer": Single
+	// "token_filters": []string{
+	// lower_case_filter.Name,
+	// },
+	// })
+	// if err != nil {
+	// log.Fatal(err)
+	// }
+
+	// indexMapping.TypeField = "type"
+	// indexMapping.DefaultAnalyzer = "en"
+	return indexMapping, nil
+
+}
