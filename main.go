@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/orbitcacheservices/cache"
 	"github.com/orbitcacheservices/logger"
 	"github.com/orbitcacheservices/models"
 	"github.com/orbitcacheservices/search"
-	"github.com/orbitcacheservices/utils/date_utils"
+	"github.com/orbitcacheservices/service"
 
 	"github.com/gorilla/mux"
 )
@@ -18,112 +17,22 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	// router.Use(verifyAccessToken)
 	router.HandleFunc("/orbitcacheservices", welcomePage)
-
-	router.HandleFunc("/orbitcacheservices/push/search", pushSearchResult).Methods("POST")
-	router.HandleFunc("/orbitcacheservices/search", getSearchResult).Methods("POST")
-
-	router.HandleFunc("/orbitcacheservices/push/operator/routes", pushOperatorRoutes).Methods("POST")
-	router.HandleFunc("/orbitcacheservices/search/operator/routes", getOperatorRoutes).Methods("POST")
+	router.HandleFunc("/orbitcacheservices/operator/routes", getOrbitOperatorRoutes).Methods("GET")
+	router.HandleFunc("/orbitcacheservices/search/{fromCode}/{toCode}/{tripDate}", getBitsSearchResult).Methods("GET")
+	router.HandleFunc("/orbitcacheservices/{operatorCode}/{username}/{apiToken}/busmap/{tripCode}/{fromCode}/{toCode}/{travelDate}", getBitsBusMap).Methods("GET")
 
 	http.ListenAndServe(":8080", router)
-
 }
 
 func welcomePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome!")
 }
 
-func pushSearchResult(w http.ResponseWriter, r *http.Request) {
-	var trip models.Trip
-	json.NewDecoder(r.Body).Decode(&trip)
-
-	search.CreateIndex()
-
-	var searchResults []models.SearchResultBleve
-	for _, sr := range trip.SearchResults {
-		var searchResult models.SearchResultBleve
-
-		a, _ := json.Marshal(sr.Amenities)
-		searchResult.Amenities = string(a)
-
-		searchResult.AvailableSeatCount = sr.AvailableSeatCount
-		searchResult.JourneyMinutes = sr.JourneyMinutes
-
-		op, _ := json.Marshal(sr.Operator)
-		searchResult.Operator = string(op)
-
-		tx, _ := json.Marshal(sr.Tax)
-		searchResult.Tax = string(tx)
-
-		tps, _ := json.Marshal(sr.TripStatus)
-		searchResult.TripStatus = string(tps)
-
-		bs, _ := json.Marshal(sr.Bus)
-		searchResult.Bus = string(bs)
-
-		fr, _ := json.Marshal(sr.Fares)
-		searchResult.Fares = string(fr)
-
-		searchResult.ModifiedDate = sr.ModifiedDate
-		searchResult.TripCode = sr.TripCode
-		searchResult.TripDate = sr.TripDate
-
-		fs, _ := json.Marshal(sr.FromStation)
-		searchResult.FromStation = string(fs)
-
-		ts, _ := json.Marshal(sr.ToStation)
-		searchResult.ToStation = string(ts)
-
-		searchResults = append(searchResults, searchResult)
-	}
-	var tripBleve models.TripBleve
-	tripBleve.FromStationCode = trip.FromStationCode
-	tripBleve.ModifiedDate = trip.ModifiedDate
-	tripBleve.SearchResults = searchResults
-	tripBleve.ToStationCode = trip.ToStationCode
-	tripBleve.TripDate = trip.TripDate
-	tripBleve.TripKey = trip.TripKey
-
-	error := cache.TripCreateOrUpdate(tripBleve, date_utils.GetNowDBFormat(), true)
-	if error != nil {
-		logger.ErrorLogger.Println(error.Error())
-		json.NewEncoder(w).Encode(models.Failure(error.Status(), error.Message()))
-	}
-
-	json.NewEncoder(w).Encode(models.Success(nil))
-}
-
-func pushOperatorRoutes(w http.ResponseWriter, r *http.Request) {
-	var operatorRoutes []models.OperatorRoute
-	json.NewDecoder(r.Body).Decode(&operatorRoutes)
-	search.CreateIndex()
-	for _, or := range operatorRoutes {
-		var operatorRouteBleve models.OperatorRouteBleve
-
-		op, _ := json.Marshal(or.Operator)
-		operatorRouteBleve.Operator = string(op)
-
-		operatorRouteBleve.OperatorCode = or.Operator.Code
-
-		rs, _ := json.Marshal(or.Routes)
-		operatorRouteBleve.Routes = string(rs)
-
-		error := cache.OperatorRoutesCreateOrUpdate(operatorRouteBleve, date_utils.GetNowDBFormat(), true)
-
-		if error != nil {
-			logger.ErrorLogger.Println(error.Error())
-			json.NewEncoder(w).Encode(models.Failure(error.Status(), error.Message()))
-		}
-	}
-
-	json.NewEncoder(w).Encode(models.Success(nil))
-}
-
-func getSearchResult(w http.ResponseWriter, r *http.Request) {
+func getOrbitOperatorRoutes(w http.ResponseWriter, r *http.Request) {
 	var searchModel models.SearchRequestModel
 	json.NewDecoder(r.Body).Decode(&searchModel)
 
-	resp, error := search.GetSearchResult(searchModel)
+	resp, error := search.GetOrbitOperatorRoutes(searchModel)
 	if error != nil {
 		logger.ErrorLogger.Println(error.Error())
 		json.NewEncoder(w).Encode(models.Failure(error.Status(), error.Message()))
@@ -131,15 +40,29 @@ func getSearchResult(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(models.Success(resp))
 }
 
-func getOperatorRoutes(w http.ResponseWriter, r *http.Request) {
-	var searchModel models.SearchRequestModel
-	json.NewDecoder(r.Body).Decode(&searchModel)
+func getBitsSearchResult(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	fromStationCode := vars["fromCode"]
+	toStationCode := vars["toCode"]
+	tripDate := vars["tripDate"]
+	searchResults := service.GetBitsSearchResult(fromStationCode, toStationCode, tripDate)
+	json.NewEncoder(w).Encode(models.Success(searchResults))
+}
 
-	resp, error := search.GetOperatorRoutes(searchModel)
-	if error != nil {
-		logger.ErrorLogger.Println(error.Error())
-		json.NewEncoder(w).Encode(models.Failure(error.Status(), error.Message()))
-	}
+func getBitsBusMap(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tripCode := vars["tripCode"]
+	fromStationCode := vars["fromCode"]
+	toStationCode := vars["toCode"]
+	travelDate := vars["travelDate"]
+
+	var operator models.Operator
+	operator.Code = vars["operatorCode"]
+	operator.Username = vars["username"]
+	operator.ApiToken = vars["apiToken"]
+
+	resp := service.GetBusmap(tripCode, fromStationCode, toStationCode, travelDate, operator)
+
 	json.NewEncoder(w).Encode(models.Success(resp))
 }
 

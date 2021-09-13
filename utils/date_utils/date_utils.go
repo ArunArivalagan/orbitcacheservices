@@ -81,3 +81,9 @@ func GetFileDateLayoutFormat(t string) string {
 	d, _ := time.Parse(ApiDbLayout, t)
 	return d.Format(fileDateLayout)
 }
+
+/***/
+func ConvertDateTime(datetime string) time.Time {
+	dateTime, _ := time.Parse(ApiDbLayout, datetime)
+	return dateTime
+}

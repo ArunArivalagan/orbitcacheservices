@@ -12,8 +12,8 @@ func UnMarshalBinaryArraySearchRequest(data []byte) (models.SearchRequestModel, 
 	return req, err
 }
 
-func UnMarshalBinaryArraySearchResult(data []byte) (models.Trip, error) {
-	var req models.Trip
+func UnMarshalBinaryArraySearchResult(data []byte) (models.OrbitTrip, error) {
+	var req models.OrbitTrip
 	err := json.Unmarshal(data, &req)
 	return req, err
 }
@@ -30,8 +30,26 @@ func UnMarshalBinaryBase(data []byte) (models.Base, error) {
 	return req, err
 }
 
+func UnMarshalBinaryOperator(data []byte) (models.Operator, error) {
+	var req models.Operator
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
 func UnMarshalBinaryFares(data []byte) ([]int, error) {
 	var req []int
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
+func UnMarshalBinaryStageFares(data []byte) ([]models.StageFare, error) {
+	var req []models.StageFare
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
+func UnMarshalBinaryCancellationTerm(data []byte) (models.CancellationTerm, error) {
+	var req models.CancellationTerm
 	err := json.Unmarshal(data, &req)
 	return req, err
 }
@@ -44,6 +62,12 @@ func UnMarshalBinaryStationPointList(data []byte) ([]models.StationPoint, error)
 
 func UnMarshalBinaryTax(data []byte) (models.Tax, error) {
 	var req models.Tax
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
+func UnMarshalBinarySchedule(data []byte) (models.Schedule, error) {
+	var req models.Schedule
 	err := json.Unmarshal(data, &req)
 	return req, err
 }
@@ -62,6 +86,30 @@ func UnMarshalBinaryStation(data []byte) (models.Station, error) {
 
 func UnMarshalBinaryOperatorRouteList(data []byte) ([]models.Route, error) {
 	var req []models.Route
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
+func UnMarshalBinaryBitsSearchResultResponse(data []byte) (models.BitsSearchResultResponse, error) {
+	var req models.BitsSearchResultResponse
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
+func UnMarshalBinaryBitsBusMapResponse(data []byte) (models.BitsBusMapResponse, error) {
+	var req models.BitsBusMapResponse
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
+func UnMarshalBinaryOperatorRoutes(data []byte) ([]models.OperatorRoute, error) {
+	var req []models.OperatorRoute
+	err := json.Unmarshal(data, &req)
+	return req, err
+}
+
+func UnMarshalBinaryOrbitOperatorRouteResponse(data []byte) (models.OrbitOperatorRouteResponse, error) {
+	var req models.OrbitOperatorRouteResponse
 	err := json.Unmarshal(data, &req)
 	return req, err
 }

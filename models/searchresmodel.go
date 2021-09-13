@@ -6,13 +6,13 @@ import (
 	"github.com/blevesearch/bleve/v2"
 )
 
-type SearchResponseModel struct {
+type OrbitSearchResponseModel struct {
 	Fields        []string               `json:"fields"`
 	Facets        map[string][]TermFacet `json:"facetResult"`
 	Total         uint64                 `json:"total"`
 	Took          time.Duration          `json:"took"`
 	Status        bleve.SearchStatus     `json:"status"`
-	SearchResults []SearchResult         `json:"searchResults"`
+	SearchResults []OrbitSearchResult    `json:"searchResults"`
 }
 
 type SearchRouteResponseModel struct {
@@ -22,6 +22,27 @@ type SearchRouteResponseModel struct {
 	Took           time.Duration          `json:"took"`
 	Status         bleve.SearchStatus     `json:"status"`
 	OperatorRoutes []OperatorRoute        `json:"searchResults"`
+	ModifiedDate   time.Time              `json:"modifiedDate"`
+}
+
+type BitsSearchResponseModel struct {
+	Fields        []string               `json:"fields"`
+	Facets        map[string][]TermFacet `json:"facetResult"`
+	Total         uint64                 `json:"total"`
+	Took          time.Duration          `json:"took"`
+	Status        bleve.SearchStatus     `json:"status"`
+	SearchResults []BitsSearchResult     `json:"searchResults"`
+	ModifiedDate  time.Time              `json:"modifiedDate"`
+}
+
+type BitsBusMapResponseModel struct {
+	Fields       []string               `json:"fields"`
+	Facets       map[string][]TermFacet `json:"facetResult"`
+	Total        uint64                 `json:"total"`
+	Took         time.Duration          `json:"took"`
+	Status       bleve.SearchStatus     `json:"status"`
+	BusMap       BitsBusMap             `json:"busMap"`
+	ModifiedDate time.Time              `json:"modifiedDate"`
 }
 
 type TermFacet struct {
