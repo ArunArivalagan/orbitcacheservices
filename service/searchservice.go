@@ -14,7 +14,7 @@ import (
 )
 
 func GetBitsSearchResult(fromStationCode, toStationCode, tripDate string) []models.BitsSearchResult {
-	cacheKey := fmt.Sprintf("%s_%s_%s_%s", "SEARCH_", fromStationCode, toStationCode, tripDate)
+	cacheKey := fmt.Sprintf("%s_%s_%s_%s", "SEARCH", fromStationCode, toStationCode, tripDate)
 	/** Get Modified Date From Redis Cache */
 	modifiedDateCache, _ := config.GetCache(cacheKey)
 	var bitsSearchResult []models.BitsSearchResult
@@ -41,34 +41,39 @@ func GetBitsSearchResult(fromStationCode, toStationCode, tripDate string) []mode
 func getOperatorBitsSearchResult(fromStationCode, toStationCode, tripDate string) []models.BitsSearchResult {
 	operators := GetRouteOperators(fromStationCode, toStationCode)
 
-	var searchResults []models.BitsSearchResult
+	fmt.Println("1", date_utils.GetNowDBFormat())
+	for _, operator := range operators {
+		searchBitsSearchResult1(fromStationCode, toStationCode, tripDate, operator)
+	}
+	fmt.Println("2", date_utils.GetNowDBFormat())
+
+	var bitsSearchResult []models.BitsSearchResult
 	channel := make(chan searchStatus)
+	fmt.Println("3", date_utils.GetNowDBFormat())
 	for _, operator := range operators {
 		go searchBitsSearchResult(fromStationCode, toStationCode, tripDate, operator, channel)
 	}
+	fmt.Println("4", date_utils.GetNowDBFormat())
 
 	result := make([]searchStatus, len(operators))
 	for i, _ := range result {
 		result[i] = <-channel
 		if result[i].status {
-			searchResults = append(searchResults, result[i].searchResults...)
+			bitsSearchResult = append(bitsSearchResult, result[i].searchResults...)
+			fmt.Println(result[i].operatorCode, result[i].operatorName, " search success !!")
 		} else {
-			fmt.Println(result[i].operatorCode, result[i].operatorName, " search is down !!")
+			// fmt.Println(result[i].operatorCode, result[i].operatorName, " search is down !!")
 		}
 	}
-	return searchResults
-}
-
-func searchBitsSearchResult(fromStationCode, toStationCode, tripDate string, operator models.Operator, channel chan searchStatus) {
-	bitsSearchResult := communicator.GetBitsSearchResult(fromStationCode, toStationCode, tripDate, operator)
-	cacheKey := fmt.Sprintf("%s_%s_%s_%s", "SEARCH_", fromStationCode, toStationCode, tripDate)
 
 	now := date_utils.GetNowDBFormat()
+
 	if len(bitsSearchResult) > 0 {
 		var tripBleve models.BitsTripBleve
 		tripBleve.FromStationCode = fromStationCode
 		tripBleve.ToStationCode = toStationCode
 		tripBleve.TripDate = tripDate
+		cacheKey := fmt.Sprintf("%s_%s_%s_%s", "SEARCH", fromStationCode, toStationCode, tripDate)
 
 		var searchResults []models.BitsSearchResultBleve
 		for _, sr := range bitsSearchResult {
@@ -120,13 +125,24 @@ func searchBitsSearchResult(fromStationCode, toStationCode, tripDate string, ope
 			logger.ErrorLogger.Println(error.Error())
 		}
 
-		channel <- searchStatus{bitsSearchResult, operator.Code, operator.Name, true}
-
 		/** Update Modified Date */
-		config.AddCache(cacheKey, []byte(now))
+		config.AddCache(cacheKey, string(now))
+	}
+	return bitsSearchResult
+}
+
+func searchBitsSearchResult(fromStationCode, toStationCode, tripDate string, operator models.Operator, channel chan searchStatus) {
+	bitsSearchResult := communicator.GetBitsSearchResult(fromStationCode, toStationCode, tripDate, operator)
+
+	if len(bitsSearchResult) > 0 {
+		channel <- searchStatus{bitsSearchResult, operator.Code, operator.Name, true}
 	} else {
 		channel <- searchStatus{bitsSearchResult, operator.Code, operator.Name, false}
 	}
+}
+
+func searchBitsSearchResult1(fromStationCode, toStationCode, tripDate string, operator models.Operator) {
+	communicator.GetBitsSearchResult(fromStationCode, toStationCode, tripDate, operator)
 }
 
 func getBitsSearchResult(fromStationCode, toStationCode, tripDate string) *models.BitsSearchResponseModel {

@@ -1,10 +1,13 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/ezeeredisservices/logger"
 	"github.com/go-redis/redis"
+	"github.com/orbitcacheservices/logger"
+	"github.com/orbitcacheservices/models"
+	"github.com/orbitcacheservices/utils"
 )
 
 var redisclient *redis.Client
@@ -94,32 +97,61 @@ func GetClient() (*redis.Client, error) {
 	return redisclient, err
 }
 
-func AddCache(key string, data []byte) error {
+func AddCache(key string, data string) error {
 	var err error
 	client, err := GetClient()
 	if err == nil {
-		err = client.Set(key, data, 0).Err()
+		var redisCache models.RedisCache
+		redisCache.Data = data
+		redisCache.Desc = key
+		redisCacheData, _ := json.Marshal(redisCache)
+		err = client.Set(key, redisCacheData, 0).Err()
 	}
 	return err
 }
 
 func GetCache(key string) (string, error) {
 	var err error
+	var data string
 	var cacheData string
 	client, err := GetClient()
 	if err == nil {
 		cacheData, err = client.Get(key).Result()
+		resp, _ := utils.UnMarshalBinaryRedisCache([]byte(cacheData))
+		data = resp.Data
 	}
-	return cacheData, err
+	return data, err
 }
 
-func GetAllKeys() (*redis.ScanIterator, error) {
+func GetAllKeys(prefix string) (*redis.ScanIterator, error) {
 	var err error
 	client, err := GetClient()
 	var iter *redis.ScanIterator
 	if err == nil {
 		var cursor uint64
-		iter = client.Scan(cursor, "LOC_*", 0).Iterator()
+		iter = client.Scan(cursor, prefix+"*", 0).Iterator()
 	}
 	return iter, err
+}
+
+func RemoveCache(key string) {
+	client, err := GetClient()
+	if err == nil {
+		client.Del(key)
+	}
+}
+
+func RemoveCachePrefix(prefix string) {
+	client, err := GetClient()
+	if err == nil {
+		var err error
+		var iter *redis.ScanIterator
+		if err == nil {
+			var cursor uint64
+			iter = client.Scan(cursor, prefix+"*", 0).Iterator()
+			for iter.Next() {
+				client.Del(iter.Val())
+			}
+		}
+	}
 }

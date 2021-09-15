@@ -76,7 +76,7 @@ func addBitsBusMap(tripCode, fromStationCode, toStationCode, travelDate string, 
 	}
 
 	/** Update Modified Date */
-	config.AddCache("BUSMAP_"+tripCode, []byte(now))
+	config.AddCache("BUSMAP_"+tripCode, string(now))
 
 	return busMap
 }

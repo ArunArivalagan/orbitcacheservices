@@ -104,7 +104,7 @@ func addOrbitOperatorRoutes(fromStationCode, toStationCode string) []models.Oper
 		}
 
 		/** Update Modified Date */
-		config.AddCache("OPERATOR_ROUTE", []byte(now))
+		config.AddCache("OPERATOR_ROUTE", string(now))
 	}
 
 	var operators []models.Operator

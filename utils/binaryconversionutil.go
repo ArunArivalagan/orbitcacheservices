@@ -113,3 +113,9 @@ func UnMarshalBinaryOrbitOperatorRouteResponse(data []byte) (models.OrbitOperato
 	err := json.Unmarshal(data, &req)
 	return req, err
 }
+
+func UnMarshalBinaryRedisCache(data []byte) (models.RedisCache, error) {
+	var req models.RedisCache
+	err := json.Unmarshal(data, &req)
+	return req, err
+}

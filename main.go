@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/orbitcacheservices/config"
 	"github.com/orbitcacheservices/logger"
 	"github.com/orbitcacheservices/models"
 	"github.com/orbitcacheservices/search"
@@ -20,6 +21,15 @@ func main() {
 	router.HandleFunc("/orbitcacheservices/operator/routes", getOrbitOperatorRoutes).Methods("GET")
 	router.HandleFunc("/orbitcacheservices/search/{fromCode}/{toCode}/{tripDate}", getBitsSearchResult).Methods("GET")
 	router.HandleFunc("/orbitcacheservices/{operatorCode}/{username}/{apiToken}/busmap/{tripCode}/{fromCode}/{toCode}/{travelDate}", getBitsBusMap).Methods("GET")
+
+	/**  Redis */
+	router.HandleFunc("/orbitcacheservices/redis/search/{fromCode}/{toCode}/{tripDate}", getSearchCache).Methods("GET")
+	router.HandleFunc("/orbitcacheservices/redis/operator/routes", getOperatorRoutesCache).Methods("GET")
+	router.HandleFunc("/orbitcacheservices/redis/busmap/{tripCode}", getBusMapCache).Methods("GET")
+
+	router.HandleFunc("/orbitcacheservices/redis/search/{fromCode}/{toCode}/{tripDate}/remove", removeSearchCache).Methods("POST")
+	router.HandleFunc("/orbitcacheservices/redis/operator/routes/remove", removeOperatorRouteCache).Methods("POST")
+	router.HandleFunc("/orbitcacheservices/redis/busmap/{tripCode}/remove", removeBusMapCache).Methods("POST")
 
 	http.ListenAndServe(":8080", router)
 }
@@ -64,6 +74,142 @@ func getBitsBusMap(w http.ResponseWriter, r *http.Request) {
 	resp := service.GetBusmap(tripCode, fromStationCode, toStationCode, travelDate, operator)
 
 	json.NewEncoder(w).Encode(models.Success(resp))
+}
+
+func removeSearchCache(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	fromStationCode := vars["fromCode"]
+	toStationCode := vars["toCode"]
+	tripDate := vars["tripDate"]
+
+	var cacheKey string
+	if fromStationCode != "" && fromStationCode != "NA" && toStationCode != "" && toStationCode != "NA" && tripDate != "" && tripDate != "NA" {
+		cacheKey = fmt.Sprintf("%s_%s_%s_%s", "SEARCH", fromStationCode, toStationCode, tripDate)
+		config.RemoveCache(cacheKey)
+	} else {
+		cacheKey = fmt.Sprintf("%s_", "SEARCH")
+		config.RemoveCachePrefix(cacheKey)
+	}
+}
+
+func removeOperatorRouteCache(w http.ResponseWriter, r *http.Request) {
+	config.RemoveCache("OPERATOR_ROUTE")
+}
+
+func removeBusMapCache(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tripCode := vars["tripCode"]
+
+	if tripCode != "" && tripCode != "NA" {
+		config.RemoveCache("BUSMAP_" + tripCode)
+	} else {
+		config.RemoveCachePrefix("BUSMAP_")
+	}
+}
+
+func getSearchCache(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	fromStationCode := vars["fromCode"]
+	toStationCode := vars["toCode"]
+	tripDate := vars["tripDate"]
+
+	var cacheKey string
+	if fromStationCode != "" && fromStationCode != "NA" && toStationCode != "" && toStationCode != "NA" && tripDate != "" && tripDate != "NA" {
+		cacheKey = fmt.Sprintf("%s_%s_%s_%s", "SEARCH", fromStationCode, toStationCode, tripDate)
+	} else {
+		cacheKey = fmt.Sprintf("%s_", "SEARCH")
+	}
+
+	var cacheDatas []models.RedisCache
+	var err error
+
+	iter, err := config.GetAllKeys(cacheKey)
+	if err != nil {
+		json.NewEncoder(w).Encode(models.Failure(500, "Unknown Exception"))
+		return
+	}
+	for iter.Next() {
+		var cacheData models.RedisCache
+		cacheData.Key = iter.Val()
+		data, err := config.GetCache(cacheData.Key)
+		cacheData.Data = data
+		if err != nil {
+			json.NewEncoder(w).Encode(models.Failure(500, "Unable To Provide Data"))
+			return
+		}
+
+		cacheDatas = append(cacheDatas, cacheData)
+	}
+	if err := iter.Err(); err != nil {
+		json.NewEncoder(w).Encode(models.Failure(500, "Unknown Exception"))
+		return
+	}
+	json.NewEncoder(w).Encode(cacheDatas)
+}
+
+func getOperatorRoutesCache(w http.ResponseWriter, r *http.Request) {
+	var cacheDatas []models.RedisCache
+	var err error
+
+	iter, err := config.GetAllKeys("OPERATOR_ROUTE")
+	if err != nil {
+		json.NewEncoder(w).Encode(models.Failure(500, "Unknown Exception"))
+		return
+	}
+	for iter.Next() {
+		var cacheData models.RedisCache
+		cacheData.Key = iter.Val()
+		data, err := config.GetCache(cacheData.Key)
+		cacheData.Data = data
+		if err != nil {
+			json.NewEncoder(w).Encode(models.Failure(500, "Unable To Provide Data"))
+			return
+		}
+
+		cacheDatas = append(cacheDatas, cacheData)
+	}
+	if err := iter.Err(); err != nil {
+		json.NewEncoder(w).Encode(models.Failure(500, "Unknown Exception"))
+		return
+	}
+	json.NewEncoder(w).Encode(cacheDatas)
+}
+
+func getBusMapCache(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tripCode := vars["tripCode"]
+	var cacheKey string
+	if tripCode != "" && tripCode != "NA" {
+		cacheKey = "BUSMAP_" + tripCode
+	} else {
+		cacheKey = "BUSMAP_"
+	}
+
+	var cacheDatas []models.RedisCache
+	var err error
+
+	iter, err := config.GetAllKeys(cacheKey)
+	if err != nil {
+		json.NewEncoder(w).Encode(models.Failure(500, "Unknown Exception"))
+		return
+	}
+	for iter.Next() {
+		var cacheData models.RedisCache
+		cacheData.Key = iter.Val()
+		data, err := config.GetCache(cacheData.Key)
+		cacheData.Data = data
+		if err != nil {
+			json.NewEncoder(w).Encode(models.Failure(500, "Unable To Provide Data"))
+			return
+		}
+
+		cacheDatas = append(cacheDatas, cacheData)
+	}
+	if err := iter.Err(); err != nil {
+		json.NewEncoder(w).Encode(models.Failure(500, "Unknown Exception"))
+		return
+	}
+	json.NewEncoder(w).Encode(cacheDatas)
 }
 
 // func verifyAccessToken(next http.Handler) http.Handler {
