@@ -1,7 +1,7 @@
 package sha_utils
 
 import (
-	"github.com/orbitcacheservices/logger"
+	"github.com/JavakarBits/orbitcacheservices/logger"
 	"golang.org/x/crypto/bcrypt"
 )
 

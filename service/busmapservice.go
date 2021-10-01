@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orbitcacheservices/cache"
-	"github.com/orbitcacheservices/communicator"
-	"github.com/orbitcacheservices/config"
-	"github.com/orbitcacheservices/logger"
-	"github.com/orbitcacheservices/models"
-	"github.com/orbitcacheservices/search"
-	"github.com/orbitcacheservices/utils/date_utils"
+	"github.com/JavakarBits/orbitcacheservices/cache"
+	"github.com/JavakarBits/orbitcacheservices/communicator"
+	"github.com/JavakarBits/orbitcacheservices/config"
+	"github.com/JavakarBits/orbitcacheservices/logger"
+	"github.com/JavakarBits/orbitcacheservices/models"
+	"github.com/JavakarBits/orbitcacheservices/search"
+	"github.com/JavakarBits/orbitcacheservices/utils/date_utils"
 )
 
 func GetBusmap(tripCode, fromStationCode, toStationCode, travelDate string, operator models.Operator) models.BitsBusMap {

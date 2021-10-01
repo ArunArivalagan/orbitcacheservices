@@ -3,7 +3,7 @@ package config
 import (
 	"log"
 
-	"github.com/orbitcacheservices/search"
+	"github.com/JavakarBits/orbitcacheservices/search"
 )
 
 func StartApplication() {

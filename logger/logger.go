@@ -15,7 +15,7 @@ var (
 
 func init() {
 	// set location of log file
-	var logpath = build.Default.GOPATH + "/src/github.com/orbitcacheservices/logger/orbitcache.log"
+	var logpath = build.Default.GOPATH + "/src/github.com/JavakarBits/orbitcacheservices/logger/orbitcache.log"
 
 	flag.Parse()
 	var file, err1 = os.Create(logpath)

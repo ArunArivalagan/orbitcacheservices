@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 
-	"github.com/orbitcacheservices/models"
+	"github.com/JavakarBits/orbitcacheservices/models"
 )
 
 func UnMarshalBinaryArraySearchRequest(data []byte) (models.SearchRequestModel, error) {
