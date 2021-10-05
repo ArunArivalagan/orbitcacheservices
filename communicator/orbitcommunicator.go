@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/JavakarBits/orbitcacheservices/logger"
-	"github.com/JavakarBits/orbitcacheservices/models"
-	"github.com/JavakarBits/orbitcacheservices/utils"
+	"github.com/orbitcacheservices/logger"
+	"github.com/orbitcacheservices/models"
+	"github.com/orbitcacheservices/utils"
 )
 
 func GetOperatorRoutes() []models.OperatorRoute {

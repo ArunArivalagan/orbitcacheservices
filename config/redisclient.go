@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/JavakarBits/orbitcacheservices/logger"
-	"github.com/JavakarBits/orbitcacheservices/models"
-	"github.com/JavakarBits/orbitcacheservices/utils"
 	"github.com/go-redis/redis"
+	"github.com/orbitcacheservices/logger"
+	"github.com/orbitcacheservices/models"
+	"github.com/orbitcacheservices/utils"
 )
 
 var redisclient *redis.Client
