@@ -15,7 +15,7 @@ func GetBitsSearchResult(fromStationCode, toStationCode, tripDate string, operat
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
-	response, err := client.Get("http://localhost:8090/busservices/api/3.0/json/" + operator.Code + "/" + operator.Username + "/" + operator.ApiToken + "/search/" + fromStationCode + "/" + toStationCode + "/" + tripDate)
+	response, err := client.Get("http://app.ezeebits.com/busservices/api/3.0/json/" + operator.Code + "/" + operator.Username + "/" + operator.ApiToken + "/search/" + fromStationCode + "/" + toStationCode + "/" + tripDate)
 	var bitsSearchResult []models.BitsSearchResult
 	if err != nil {
 		fmt.Println("Timeout .. " + operator.Name)
@@ -39,7 +39,7 @@ func GetBitsBusMap(tripCode, fromStationCode, toStationCode, travelDate string, 
 		Timeout: 5 * time.Second,
 	}
 	var busmap models.BitsBusMap
-	response, err := client.Get("http://localhost:8090/busservices/api/3.0/json/" + operator.Code + "/" + operator.Username + "/" + operator.ApiToken + "/busmap/" + tripCode + "/" + fromStationCode + "/" + toStationCode + "/" + travelDate)
+	response, err := client.Get("http://app.ezeebits.com/busservices/api/3.0/json/" + operator.Code + "/" + operator.Username + "/" + operator.ApiToken + "/busmap/" + tripCode + "/" + fromStationCode + "/" + toStationCode + "/" + travelDate)
 	if err != nil {
 		fmt.Println("Timeout .. " + operator.Name)
 	} else {

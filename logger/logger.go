@@ -2,7 +2,6 @@ package logger
 
 import (
 	"flag"
-	"go/build"
 	"log"
 	"os"
 )
@@ -15,7 +14,8 @@ var (
 
 func init() {
 	// set location of log file
-	var logpath = build.Default.GOPATH + "/src/github.com/orbitcacheservices/logger/orbitcache.log"
+	// var logpath = build.Default.GOPATH + "/src/github.com/orbitcacheservices/logger/orbitcache.log"
+	var logpath = "/usr/run/orbitCache/log/orbitcache.log"
 
 	flag.Parse()
 	var file, err1 = os.Create(logpath)

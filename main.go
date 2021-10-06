@@ -31,7 +31,7 @@ func main() {
 	router.HandleFunc("/orbitcacheservices/redis/operator/routes/remove", removeOperatorRouteCache).Methods("POST")
 	router.HandleFunc("/orbitcacheservices/redis/busmap/{tripCode}/remove", removeBusMapCache).Methods("POST")
 
-	http.ListenAndServe(":9090", router)
+	http.ListenAndServe(":8090", router)
 }
 
 func welcomePage(w http.ResponseWriter, r *http.Request) {

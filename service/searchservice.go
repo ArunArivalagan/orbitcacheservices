@@ -41,19 +41,11 @@ func GetBitsSearchResult(fromStationCode, toStationCode, tripDate string) []mode
 func getOperatorBitsSearchResult(fromStationCode, toStationCode, tripDate string) []models.BitsSearchResult {
 	operators := GetRouteOperators(fromStationCode, toStationCode)
 
-	fmt.Println("1", date_utils.GetNowDBFormat())
-	for _, operator := range operators {
-		searchBitsSearchResult1(fromStationCode, toStationCode, tripDate, operator)
-	}
-	fmt.Println("2", date_utils.GetNowDBFormat())
-
 	var bitsSearchResult []models.BitsSearchResult
 	channel := make(chan searchStatus)
-	fmt.Println("3", date_utils.GetNowDBFormat())
 	for _, operator := range operators {
 		go searchBitsSearchResult(fromStationCode, toStationCode, tripDate, operator, channel)
 	}
-	fmt.Println("4", date_utils.GetNowDBFormat())
 
 	result := make([]searchStatus, len(operators))
 	for i, _ := range result {
@@ -133,7 +125,6 @@ func getOperatorBitsSearchResult(fromStationCode, toStationCode, tripDate string
 
 func searchBitsSearchResult(fromStationCode, toStationCode, tripDate string, operator models.Operator, channel chan searchStatus) {
 	bitsSearchResult := communicator.GetBitsSearchResult(fromStationCode, toStationCode, tripDate, operator)
-
 	if len(bitsSearchResult) > 0 {
 		channel <- searchStatus{bitsSearchResult, operator.Code, operator.Name, true}
 	} else {
@@ -141,9 +132,9 @@ func searchBitsSearchResult(fromStationCode, toStationCode, tripDate string, ope
 	}
 }
 
-func searchBitsSearchResult1(fromStationCode, toStationCode, tripDate string, operator models.Operator) {
-	communicator.GetBitsSearchResult(fromStationCode, toStationCode, tripDate, operator)
-}
+// func searchBitsSearchResult1(fromStationCode, toStationCode, tripDate string, operator models.Operator) {
+// 	communicator.GetBitsSearchResult(fromStationCode, toStationCode, tripDate, operator)
+// }
 
 func getBitsSearchResult(fromStationCode, toStationCode, tripDate string) *models.BitsSearchResponseModel {
 	var searchModel models.SearchRequestModel
